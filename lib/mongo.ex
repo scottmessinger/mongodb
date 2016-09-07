@@ -116,6 +116,55 @@ defmodule Mongo do
   end
 
   @doc """
+  The `find_and_modify` command modifies and returns a single document.
+  By default, the returned document does not include the modifications made on the update.
+  To return the document with the modifications made on the update, use the `new` option.
+  [(From the MongoDB Docs)](https://docs.mongodb.com/manual/reference/command/findAndModify/)
+
+  ## Options
+    * `:sort` - Determines which document the operation modifies if the query selects multiple documents.
+                findAndModify modifies the first document in the sort order specified by this argument.
+    * `:remove` - Boolean. Removes the document (default `:false`)
+    * `:update` -  Boolean. Updates the document (default `:true`)
+    * `:new` -     Boolean. Returns the modified document instead of the original (default `:false`)
+    * `:fields` -  A subset of fields to return. Will return fields from the new document
+    * `:upsert` -  Create a document if no document matches the query or updates the document.
+                   Used in conjunction with `update`
+    * `:bypass_document_validation` -  Bypasses document validation during the operation
+    * `:write_concern` -  Specify the write condition
+    * `:max_time` - Specifies a time limit in milliseconds for processing the operation.
+
+  """
+  @type find_and_modify_opts :: [
+    sort: %{},
+    remove: boolean,
+    new: boolean,
+    fields: %{},
+    upsert: boolean,
+    bypassDocumentValidation: boolean,
+    writeConcern: %{}
+  ]
+  @spec find_and_modify(conn, collection, BSON.document, find_and_modify_opts) :: %{value: %{}, lastErrorObject: %{}, ok: non_neg_integer}
+  def find_and_modify(conn, coll, filter, update, opts \\ []) do
+    query = [
+      findAndModify:            coll,
+      query:                    filter,
+      update:                   update,
+      remove:                   opts[:remove],
+      new:                      opts[:new],
+      fields:                   opts[:fields],
+      upsert:                   opts[:upsert],
+      bypassDocumentValidation: opts[:bypass_document_validation],
+      writeConcern:             opts[:write_concern],
+      maxTimeMS:                opts[:max_time]
+    ] |> filter_nils
+
+    opts = Keyword.drop(opts, ~w(new fields remove upsert bypass_document_validation write_concern max_time)a)
+
+    with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc}
+  end
+
+  @doc """
   Returns the count of documents that would match a `find/4` query.
 
   ## Options
