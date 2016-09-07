@@ -123,6 +123,7 @@ defmodule Mongo do
   ]
   @spec find_and_modify(conn, collection, BSON.document, find_and_modify_opts) :: %{value: %{}, lastErrorObject: %{}, ok: non_neg_integer}
   def find_and_modify(conn, coll, filter, update, opts \\ []) do
+    update = if opts[:remove], do: nil, else: update
     query = [
       findAndModify:            coll,
       query:                    filter,
