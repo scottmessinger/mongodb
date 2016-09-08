@@ -93,53 +93,101 @@ defmodule Mongo do
   end
 
   @doc """
-  The `find_and_modify` command modifies and returns a single document.
-  By default, the returned document does not include the modifications made on the update.
-  To return the document with the modifications made on the update, use the `new` option.
-  [(From the MongoDB Docs)](https://docs.mongodb.com/manual/reference/command/findAndModify/)
+  Finds a document and updates it (using atomic modifiers)
 
-  ## Options
+  ##Options
+
+    * `:bypass_document_validation` -  Allows the write to opt-out of document level validation
+    * `:max_time` -  The maximum amount of time to allow the query to run (in MS)
+    * `:projection` -  Limits the fields to return for all matching documents.
+    * `:return_document` - Returns the replaced or inserted document rather than the original. Values are :before or :after. (default is :before)
     * `:sort` - Determines which document the operation modifies if the query selects multiple documents.
-                findAndModify modifies the first document in the sort order specified by this argument.
-    * `:remove` - Boolean. Removes the document (default `:false`)
-    * `:update` -  Boolean. Updates the document (default `:true`)
-    * `:new` -     Boolean. Returns the modified document instead of the original (default `:false`)
-    * `:fields` -  A subset of fields to return. Will return fields from the new document
     * `:upsert` -  Create a document if no document matches the query or updates the document.
-                   Used in conjunction with `update`
-    * `:bypass_document_validation` -  Bypasses document validation during the operation
-    * `:write_concern` -  Specify the write condition
-    * `:max_time` - Specifies a time limit in milliseconds for processing the operation.
-
   """
-  @type find_and_modify_opts :: [
-    sort: %{},
-    remove: boolean,
-    new: boolean,
-    fields: %{},
-    upsert: boolean,
-    bypassDocumentValidation: boolean,
-    writeConcern: %{}
-  ]
-  @spec find_and_modify(conn, collection, BSON.document, find_and_modify_opts) :: %{value: %{}, lastErrorObject: %{}, ok: non_neg_integer}
-  def find_and_modify(conn, coll, filter, update, opts \\ []) do
-    update = if opts[:remove], do: nil, else: update
+
+  @spec find_one_and_update(conn, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_update(conn, coll, filter, update, opts \\ []) do
+    modifier_docs(update, :update)
     query = [
       findAndModify:            coll,
       query:                    filter,
       update:                   update,
-      remove:                   opts[:remove],
-      new:                      opts[:new],
-      fields:                   opts[:fields],
-      upsert:                   opts[:upsert],
       bypassDocumentValidation: opts[:bypass_document_validation],
-      writeConcern:             opts[:write_concern],
-      maxTimeMS:                opts[:max_time]
+      maxTimeMS:                opts[:max_time],
+      fields:                   opts[:projection],
+      new:                      should_return_new(opts[:return_document]),
+      sort:                     opts[:sort],
+      upsert:                   opts[:upsert],
+      collation:                opts[:collation],
     ] |> filter_nils
 
-    opts = Keyword.drop(opts, ~w(new fields remove upsert bypass_document_validation write_concern max_time)a)
+    opts = Keyword.drop(opts, ~w(bypass_document_validation max_time projection return_document sort upsert collation))
 
-    with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc}
+    with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
+  end
+
+  @doc """
+  Finds a document and replaces it
+
+  ##Options
+
+    * `:bypass_document_validation` -  Allows the write to opt-out of document level validation
+    * `:max_time` -  The maximum amount of time to allow the query to run (in MS)
+    * `:projection` -  Limits the fields to return for all matching documents.
+    * `:return_document` - Returns the replaced or inserted document rather than the original. Values are :before or :after. (default is :before)
+    * `:sort` - Determines which document the operation modifies if the query selects multiple documents.
+    * `:upsert` -  Create a document if no document matches the query or updates the document.
+    * `:collation` - Optionally specifies a collation to use in MongoDB 3.4 and higher.
+  """
+  @spec find_one_and_replace(conn, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_replace(conn, coll, filter, replacement, opts \\ []) do
+    modifier_docs(replacement, :replace)
+    query = [
+      findAndModify:            coll,
+      query:                    filter,
+      update:                   replacement,
+      bypassDocumentValidation: opts[:bypass_document_validation],
+      maxTimeMS:                opts[:max_time],
+      fields:                   opts[:projection],
+      new:                      should_return_new(opts[:return_document]),
+      sort:                     opts[:sort],
+      upsert:                   opts[:upsert],
+      collation:                opts[:collation],
+    ] |> filter_nils
+
+    opts = Keyword.drop(opts, ~w(bypass_document_validation max_time projection return_document sort upsert collation))
+
+    with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
+  end
+
+  defp should_return_new(:after), do: true
+  defp should_return_new(:before), do: false
+  defp should_return_new(_), do: false
+
+  @doc """
+  Finds a document and deletes it
+
+  ##Options
+
+    * `:max_time` -  The maximum amount of time to allow the query to run (in MS)
+    * `:projection` -  Limits the fields to return for all matching documents.
+    * `:sort` - Determines which document the operation modifies if the query selects multiple documents.
+    * `:collation` - Optionally specifies a collation to use in MongoDB 3.4 and higher.
+  """
+  @spec find_one_and_delete(conn, collection, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_delete(conn, coll, filter, opts \\ []) do
+    query = [
+      findAndModify: coll,
+      query:         filter,
+      remove:        true,
+      maxTimeMS:     opts[:max_time],
+      fields:        opts[:projection],
+      sort:          opts[:sort],
+      collation:     opts[:collation],
+    ] |> filter_nils
+    opts = Keyword.drop(opts, ~w( max_time projection sort collation))
+
+    with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
   end
 
   @doc """
