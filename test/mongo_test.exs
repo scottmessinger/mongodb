@@ -181,11 +181,12 @@ defmodule Mongo.Test do
     assert %{"foo" => 43, "baz" => 1} = value, "Should upsert"
   end
 
+  @tag :find_and_modify
   test "find_one_and_update!", c do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_update!(c.pid, coll, %{_id: 2}, %{"$set" => %{"bar" => 1}})
+      IO.inspect Mongo.find_one_and_update!(c.pid, coll, %{_id: 2}, %{})
     end
   end
 
@@ -235,11 +236,12 @@ defmodule Mongo.Test do
     assert [%{"upsertedDocument" => true}] = Mongo.find(c.pid, coll, %{upsertedDocument: true}) |> Enum.to_list
   end
 
+  @tag :find_and_modify
   test "find_one_and_replace!", c do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_replace!(c.pid, coll, %{_id: 2}, %{"bar" => 1})
+      Mongo.find_one_and_replace!(c.pid, coll, %{_id: 2}, %{})
     end
   end
 
@@ -268,11 +270,12 @@ defmodule Mongo.Test do
     assert [%{"note" => "keep"}] = Mongo.find(c.pid, coll, %{note: "keep"}) |> Enum.to_list
   end
 
+  @tag :find_and_modify
   test "find_one_and_delete!", c do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_delete!(c.pid, coll, %{_id: 2})
+      Mongo.find_one_and_delete!(c.pid, coll, nil, [max_time: -100])
     end
   end
 
