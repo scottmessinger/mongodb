@@ -126,6 +126,16 @@ defmodule Mongo do
     with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
   end
 
+
+  @doc """
+  Similar to `find_one_and_update/5` but unwraps the result and raises on error.
+  """
+  @spec find_one_and_update!(conn, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_update!(conn, coll, filter, update, opts \\ []) do
+    bangify(find_one_and_update(conn, coll, filter, update, opts))
+  end
+
+
   @doc """
   Finds a document and replaces it
 
@@ -160,6 +170,15 @@ defmodule Mongo do
     with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
   end
 
+
+  @doc """
+  Similar to `find_one_and_replace/5` but unwraps the result and raises on error.
+  """
+  @spec find_one_and_replace!(conn, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_replace!(conn, coll, filter, replace, opts \\ []) do
+    bangify(find_one_and_replace(conn, coll, filter, replace, opts))
+  end
+
   defp should_return_new(:after), do: true
   defp should_return_new(:before), do: false
   defp should_return_new(_), do: false
@@ -189,6 +208,15 @@ defmodule Mongo do
 
     with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
   end
+
+  @doc """
+  Similar to `find_one_and_replace/5` but unwraps the result and raises on error.
+  """
+  @spec find_one_and_delete!(conn, collection, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_delete!(conn, coll, filter, opts \\ []) do
+    bangify(find_one_and_delete(conn, coll, filter, opts))
+  end
+
 
   @doc """
   Returns the count of documents that would match a `find/4` query.
