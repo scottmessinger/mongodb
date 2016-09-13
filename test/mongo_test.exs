@@ -186,7 +186,7 @@ defmodule Mongo.Test do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_update!(c.pid, coll, %{_id: 2}, %{}, [sort: %{foo: -100, bar: "invalid val" }, max_time: -100])
+      Mongo.find_one_and_update!(c.pid, coll, %{_id: 2}, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
     end
   end
 
@@ -241,7 +241,7 @@ defmodule Mongo.Test do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_replace!(c.pid, coll, %{_id: 2}, %{}, [sort: %{foo: -100, bar: "invalid val" }, max_time: -100])
+      Mongo.find_one_and_replace!(c.pid, coll, %{_id: 2}, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
     end
   end
 
@@ -275,7 +275,7 @@ defmodule Mongo.Test do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_delete!(c.pid, coll, %{}, [sort: %{foo: -100, bar: "invalid val" }, max_time: -100])
+      Mongo.find_one_and_delete!(c.pid, coll, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
     end
   end
 
