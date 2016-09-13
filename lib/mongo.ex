@@ -123,7 +123,7 @@ defmodule Mongo do
 
     opts = Keyword.drop(opts, ~w(bypass_document_validation max_time projection return_document sort upsert collation))
 
-    with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
+    with {:ok, doc} <- run_command(conn, query, opts), do: {:ok, doc["value"]}
   end
 
 
@@ -167,7 +167,7 @@ defmodule Mongo do
 
     opts = Keyword.drop(opts, ~w(bypass_document_validation max_time projection return_document sort upsert collation))
 
-    with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
+    with {:ok, doc} <- run_command(conn, query, opts), do: {:ok, doc["value"]}
   end
 
 
@@ -206,7 +206,7 @@ defmodule Mongo do
     ] |> filter_nils
     opts = Keyword.drop(opts, ~w( max_time projection sort collation))
 
-    with {:ok, doc} <- command(conn, query, opts), do: {:ok, doc["value"]}
+    with {:ok, doc} <- run_command(conn, query, opts), do: {:ok, doc["value"]}
   end
 
   @doc """
