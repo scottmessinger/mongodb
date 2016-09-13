@@ -134,7 +134,52 @@ defmodule Mongo.Test do
       Mongo.find(Pool, coll, %{}, sort: [foo: -1], batch_size: 2, limit: 2) |> Enum.to_list
   end
 
-  test "insert_one" do
+  @tag :find_and_modify
+  test "find_and_modify", c do
+    coll = unique_name()
+
+    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 42, bar: 1})
+
+    # test default
+    assert {:ok, %{"lastErrorObject" => last_error_object, "value" => value, "ok" => 1.0}} =
+      Mongo.find_and_modify(c.pid, coll, %{"foo" => 42}, %{"$set" => %{bar: 2}})
+    assert %{"n" => 1, "updatedExisting" => true} = last_error_object
+    assert %{"_id" =>  _, "foo" => 42, "bar" => 1 } = value
+
+    # Test opts[:new] = true
+    assert {:ok, %{"lastErrorObject" => last_error_object, "value" => value, "ok" => 1.0}} =
+      Mongo.find_and_modify(c.pid, coll, %{"foo" => 42}, %{"$set" => %{bar: 2}}, [new: true])
+    assert %{"n" => 1, "updatedExisting" => true} = last_error_object
+    assert %{"_id" =>  _, "foo" => 42, "bar" => 2 } = value, "Response doc includes new value"
+
+    # Test opts[:fields]
+    assert {:ok, %{"lastErrorObject" => last_error_object, "value" => value, "ok" => 1.0}} =
+      Mongo.find_and_modify(c.pid, coll, %{"foo" => 42}, %{"$set" => %{bar: 2}}, [fields: %{"bar" => 1}])
+    assert %{"n" => 1, "updatedExisting" => true} = last_error_object
+    assert %{"_id" =>  _, "bar" => 2} = value, "Response doc includes selected fields"
+    assert !Map.has_key?(value, "foo"), "Response doc does not include \"foo\""
+
+    # Test opts[:upsert] = true
+    assert {:ok, %{"lastErrorObject" => last_error_object, "value" => value, "ok" => 1.0}} =
+      Mongo.find_and_modify(c.pid, coll, %{"foo" => 1}, %{"$set" => %{bar: 2}}, [upsert: true])
+    assert %{"n" => 1, "updatedExisting" => false} = last_error_object, "Upserted"
+    assert value == nil, "Does not return a document"
+
+    # Test opts[:upsert] = true && opts[:new] = true
+    assert {:ok, %{"lastErrorObject" => last_error_object, "value" => value, "ok" => 1.0}} =
+      Mongo.find_and_modify(c.pid, coll, %{"foo" => 2}, %{"$set" => %{bar: 2}}, [upsert: true, new: true])
+    assert %{"n" => 1, "updatedExisting" => false} = last_error_object, "Upserted"
+    assert %{"_id" =>  _, "foo" => 2, "bar" => 2} = value, "Returned upserted document"
+
+    # Test opts[:remove] = true
+    assert {:ok, %{"lastErrorObject" => last_error_object, "value" => value, "ok" => 1.0}} =
+      Mongo.find_and_modify(c.pid, coll, %{"foo" => 42}, %{}, [remove: true])
+    assert %{"n" => 1} = last_error_object, "Removed"
+    assert %{"_id" => _, "foo" => 42, "bar" => _} = value
+    assert {:ok, 0} = Mongo.count(c.pid, coll, %{"foo" => 42}), "Removed the document"
+  end
+
+  test "insert_one", c do
     coll = unique_name()
 
     assert_raise ArgumentError, fn ->
