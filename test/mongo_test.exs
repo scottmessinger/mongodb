@@ -135,46 +135,46 @@ defmodule Mongo.Test do
   end
 
   @tag :find_and_modify
-  test "find_one_and_update", c do
+  test "find_one_and_update" do
     coll = unique_name()
 
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 42, bar: 1})
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 42, bar: 1})
 
     # defaults
-    assert {:ok, value} = Mongo.find_one_and_update(c.pid, coll,
+    assert {:ok, value} = Mongo.find_one_and_update(Pool, coll,
       %{"foo" => 42},
       %{"$set" => %{bar: 2}})
     assert %{"bar" => 1} = value, "Should return original document by default"
 
     # Should raise if we don't have atomic operators
     assert_raise ArgumentError, fn ->
-      Mongo.find_one_and_update(c.pid, coll, %{"foo" => 42}, %{bar: 3})
+      Mongo.find_one_and_update(Pool, coll, %{"foo" => 42}, %{bar: 3})
     end
 
     # return_document = :after
-    assert {:ok, value} = Mongo.find_one_and_update(c.pid, coll,
+    assert {:ok, value} = Mongo.find_one_and_update(Pool, coll,
       %{"foo" => 42},
       %{"$set" => %{bar: 3}},
       [return_document: :after])
     assert %{"bar" => 3} = value, "Should return modified doc"
 
     # Projection
-    assert {:ok, value} = Mongo.find_one_and_update(c.pid, coll,
+    assert {:ok, value} = Mongo.find_one_and_update(Pool, coll,
       %{"foo" => 42},
       %{"$set" => %{bar: 3}},
       [projection: %{"bar" => 1}])
     assert Map.get(value, "foo") == nil, "Should respect the projection"
 
     # Sort
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 42, bar: 10})
-    assert {:ok, value} = Mongo.find_one_and_update( c.pid, coll,
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 42, bar: 10})
+    assert {:ok, value} = Mongo.find_one_and_update( Pool, coll,
       %{"foo" => 42},
       %{"$set" => %{baz: 1}},
       [sort: %{"bar" => -1}, return_document: :after])
     assert %{"bar" => 10, "baz" => 1} = value, "Should respect the sort"
 
     # Upsert
-    assert {:ok, value} = Mongo.find_one_and_update(c.pid, coll,
+    assert {:ok, value} = Mongo.find_one_and_update(Pool, coll,
       %{"foo" => 43},
       %{"$set" => %{baz: 1}},
       [upsert: true, return_document: :after])
@@ -182,31 +182,31 @@ defmodule Mongo.Test do
   end
 
   @tag :find_and_modify
-  test "find_one_and_update!", c do
+  test "find_one_and_update!" do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_update!(c.pid, coll, %{_id: 2}, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
+      Mongo.find_one_and_update!(Pool, coll, %{_id: 2}, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
     end
   end
 
   @tag :find_and_modify
-  test "find_one_and_replace", c do
+  test "find_one_and_replace" do
     coll = unique_name()
 
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 42, bar: 1})
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 42, bar: 1})
 
     assert_raise ArgumentError, fn ->
-      Mongo.find_one_and_replace(c.pid, coll, %{"foo" => 42}, %{"$set" => %{bar: 3}})
+      Mongo.find_one_and_replace(Pool, coll, %{"foo" => 42}, %{"$set" => %{bar: 3}})
     end
 
     # defaults
-    assert {:ok, value} = Mongo.find_one_and_replace(c.pid, coll, %{"foo" => 42}, %{bar: 2})
+    assert {:ok, value} = Mongo.find_one_and_replace(Pool, coll, %{"foo" => 42}, %{bar: 2})
     assert %{"foo" => 42, "bar" => 1} = value, "Should return original document by default"
 
     # return_document = :after
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 43, bar: 1})
-    assert {:ok, value} = Mongo.find_one_and_replace(c.pid, coll,
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 43, bar: 1})
+    assert {:ok, value} = Mongo.find_one_and_replace(Pool, coll,
       %{"foo" => 43}, %{bar: 3},
       [return_document: :after])
     assert %{"bar" => 3} = value, "Should return modified doc"
@@ -214,72 +214,72 @@ defmodule Mongo.Test do
 
 
     # Projection
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 44, bar: 1})
-    assert {:ok, value} = Mongo.find_one_and_replace(c.pid, coll,
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 44, bar: 1})
+    assert {:ok, value} = Mongo.find_one_and_replace(Pool, coll,
       %{"foo" => 44}, %{foo: 44, bar: 3},
       [return_document: :after, projection: %{bar: 1}])
     assert Map.get(value, "foo") == nil, "Should respect the projection"
 
     # Sort
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 50, bar: 1, note: "keep"})
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 50, bar: 2, note: "replace"})
-    assert {:ok, _} = Mongo.find_one_and_replace(c.pid, coll,
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 50, bar: 1, note: "keep"})
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 50, bar: 2, note: "replace"})
+    assert {:ok, _} = Mongo.find_one_and_replace(Pool, coll,
       %{"foo" => 50}, %{foo: 50, bar: 3}, [sort: %{bar: -1}])
-    assert [doc] = Mongo.find(c.pid, coll, %{note: "keep"}) |> Enum.to_list
+    assert [doc] = Mongo.find(Pool, coll, %{note: "keep"}) |> Enum.to_list
     assert %{"bar" => 1, "note" => "keep"} = doc, "Replaced the correct document according to the sort"
 
     # Upsert
-    assert [] = Mongo.find(c.pid, coll, %{upsertedDocument: true}) |> Enum.to_list
-    assert {:ok, value} = Mongo.find_one_and_replace(c.pid, coll,
+    assert [] = Mongo.find(Pool, coll, %{upsertedDocument: true}) |> Enum.to_list
+    assert {:ok, value} = Mongo.find_one_and_replace(Pool, coll,
       %{"upsertedDocument" => true}, %{"upsertedDocument" => true}, [upsert: true, return_document: :after])
     assert %{"upsertedDocument" => true} = value, "Should upsert"
-    assert [%{"upsertedDocument" => true}] = Mongo.find(c.pid, coll, %{upsertedDocument: true}) |> Enum.to_list
+    assert [%{"upsertedDocument" => true}] = Mongo.find(Pool, coll, %{upsertedDocument: true}) |> Enum.to_list
   end
 
   @tag :find_and_modify
-  test "find_one_and_replace!", c do
+  test "find_one_and_replace!" do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_replace!(c.pid, coll, %{_id: 2}, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
+      Mongo.find_one_and_replace!(Pool, coll, %{_id: 2}, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
     end
   end
 
   @tag :find_and_modify
-  test "find_one_and_delete", c do
+  test "find_one_and_delete" do
     coll = unique_name()
 
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 42, bar: 1})
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 42, bar: 1})
 
     # default
-    assert {:ok, %{"foo" => 42, "bar" => 1}} = Mongo.find_one_and_delete(c.pid, coll, %{foo: 42})
-    assert [] = Mongo.find(c.pid, coll, %{foo: 42}) |> Enum.to_list
+    assert {:ok, %{"foo" => 42, "bar" => 1}} = Mongo.find_one_and_delete(Pool, coll, %{foo: 42})
+    assert [] = Mongo.find(Pool, coll, %{foo: 42}) |> Enum.to_list
 
     # projection
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 42, bar: 1})
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 42, bar: 1})
     assert {:ok, value} =
-      Mongo.find_one_and_delete(c.pid, coll, %{foo: 42}, [projection: %{bar: 1}])
+      Mongo.find_one_and_delete(Pool, coll, %{foo: 42}, [projection: %{bar: 1}])
     assert Map.get(value, "foo") == nil, "Should respect the projection"
 
     # sort
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 50, bar: 1, note: "keep"})
-    assert {:ok, _} = Mongo.insert_one(c.pid, coll, %{foo: 50, bar: 2, note: "delete"})
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 50, bar: 1, note: "keep"})
+    assert {:ok, _} = Mongo.insert_one(Pool, coll, %{foo: 50, bar: 2, note: "delete"})
 
     assert {:ok, %{"note" => "delete"}} =
-      Mongo.find_one_and_delete(c.pid, coll, %{foo: 50}, [sort: %{bar: -1}])
-    assert [%{"note" => "keep"}] = Mongo.find(c.pid, coll, %{note: "keep"}) |> Enum.to_list
+      Mongo.find_one_and_delete(Pool, coll, %{foo: 50}, [sort: %{bar: -1}])
+    assert [%{"note" => "keep"}] = Mongo.find(Pool, coll, %{note: "keep"}) |> Enum.to_list
   end
 
   @tag :find_and_modify
-  test "find_one_and_delete!", c do
+  test "find_one_and_delete!" do
     coll = unique_name()
 
     assert_raise Mongo.Error, fn ->
-      Mongo.find_one_and_delete!(c.pid, coll, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
+      Mongo.find_one_and_delete!(Pool, coll, %{}, [sort: %{foo: -100, bar: "invalid val" }, projection: %{foo: "invalid_value"}, max_time: -100])
     end
   end
 
-  test "insert_one", c do
+  test "insert_one" do
     coll = unique_name()
 
     assert_raise ArgumentError, fn ->

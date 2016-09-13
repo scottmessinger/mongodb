@@ -105,8 +105,8 @@ defmodule Mongo do
     * `:upsert` -  Create a document if no document matches the query or updates the document.
   """
 
-  @spec find_one_and_update(conn, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
-  def find_one_and_update(conn, coll, filter, update, opts \\ []) do
+  @spec find_one_and_update(Pool.t, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_update(pool, coll, filter, update, opts \\ []) do
     modifier_docs(update, :update)
     query = [
       findAndModify:            coll,
@@ -123,16 +123,16 @@ defmodule Mongo do
 
     opts = Keyword.drop(opts, ~w(bypass_document_validation max_time projection return_document sort upsert collation))
 
-    with {:ok, doc} <- run_command(conn, query, opts), do: {:ok, doc["value"]}
+    with {:ok, doc} <- run_command(pool, query, opts), do: {:ok, doc["value"]}
   end
 
 
   @doc """
   Similar to `find_one_and_update/5` but unwraps the result and raises on error.
   """
-  @spec find_one_and_update!(conn, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
-  def find_one_and_update!(conn, coll, filter, update, opts \\ []) do
-    bangify(find_one_and_update(conn, coll, filter, update, opts))
+  @spec find_one_and_update!(Pool.t, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_update!(pool, coll, filter, update, opts \\ []) do
+    bangify(find_one_and_update(pool, coll, filter, update, opts))
   end
 
 
@@ -149,8 +149,8 @@ defmodule Mongo do
     * `:upsert` -  Create a document if no document matches the query or updates the document.
     * `:collation` - Optionally specifies a collation to use in MongoDB 3.4 and higher.
   """
-  @spec find_one_and_replace(conn, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
-  def find_one_and_replace(conn, coll, filter, replacement, opts \\ []) do
+  @spec find_one_and_replace(Pool.t, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_replace(pool, coll, filter, replacement, opts \\ []) do
     modifier_docs(replacement, :replace)
     query = [
       findAndModify:            coll,
@@ -167,16 +167,16 @@ defmodule Mongo do
 
     opts = Keyword.drop(opts, ~w(bypass_document_validation max_time projection return_document sort upsert collation))
 
-    with {:ok, doc} <- run_command(conn, query, opts), do: {:ok, doc["value"]}
+    with {:ok, doc} <- run_command(pool, query, opts), do: {:ok, doc["value"]}
   end
 
 
   @doc """
   Similar to `find_one_and_replace/5` but unwraps the result and raises on error.
   """
-  @spec find_one_and_replace!(conn, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
-  def find_one_and_replace!(conn, coll, filter, replace, opts \\ []) do
-    bangify(find_one_and_replace(conn, coll, filter, replace, opts))
+  @spec find_one_and_replace!(Pool.t, collection, BSON.document, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_replace!(pool, coll, filter, replace, opts \\ []) do
+    bangify(find_one_and_replace(pool, coll, filter, replace, opts))
   end
 
   defp should_return_new(:after), do: true
@@ -193,8 +193,8 @@ defmodule Mongo do
     * `:sort` - Determines which document the operation modifies if the query selects multiple documents.
     * `:collation` - Optionally specifies a collation to use in MongoDB 3.4 and higher.
   """
-  @spec find_one_and_delete(conn, collection, BSON.document, Keyword.t) :: result(BSON.document)
-  def find_one_and_delete(conn, coll, filter, opts \\ []) do
+  @spec find_one_and_delete(Pool.t, collection, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_delete(pool, coll, filter, opts \\ []) do
     query = [
       findAndModify: coll,
       query:         filter,
@@ -206,15 +206,15 @@ defmodule Mongo do
     ] |> filter_nils
     opts = Keyword.drop(opts, ~w( max_time projection sort collation))
 
-    with {:ok, doc} <- run_command(conn, query, opts), do: {:ok, doc["value"]}
+    with {:ok, doc} <- run_command(pool, query, opts), do: {:ok, doc["value"]}
   end
 
   @doc """
   Similar to `find_one_and_replace/5` but unwraps the result and raises on error.
   """
-  @spec find_one_and_delete!(conn, collection, BSON.document, Keyword.t) :: result(BSON.document)
-  def find_one_and_delete!(conn, coll, filter, opts \\ []) do
-    bangify(find_one_and_delete(conn, coll, filter, opts))
+  @spec find_one_and_delete!(Pool.t, collection, BSON.document, Keyword.t) :: result(BSON.document)
+  def find_one_and_delete!(pool, coll, filter, opts \\ []) do
+    bangify(find_one_and_delete(pool, coll, filter, opts))
   end
 
 
